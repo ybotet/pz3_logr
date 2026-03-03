@@ -38,3 +38,15 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(userTasks)
 }
+
+func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
+    var newTask Task
+    if err := json.NewDecoder(r.Body).Decode(&newTask); err != nil {
+        http.Error(w, "Неверный формат данных", http.StatusBadRequest)
+        return
+    }
+    newTask.ID = "0001" // Генерация ID (для примера)
+    h.tasks = append(h.tasks, newTask)
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(newTask)
+}

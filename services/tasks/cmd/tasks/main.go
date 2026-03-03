@@ -55,6 +55,7 @@ func main() {
 
     // Настройка маршрутов
     r.HandleFunc("/tasks", authMiddleware.Authenticate(taskHandler.GetTasks)).Methods("GET")
+    r.HandleFunc("/tasks", authMiddleware.Authenticate(taskHandler.CreateTask)).Methods("POST")
 
     log.Printf("Сервер Tasks слушает порт %s", tasksPort)
     log.Fatal(http.ListenAndServe(":"+tasksPort, r))
