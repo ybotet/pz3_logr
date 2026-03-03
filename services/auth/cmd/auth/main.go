@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -10,26 +9,44 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/ybotet/pz2_grpc_auth_task/services/auth/internal/auth"
-	grpcserver "github.com/ybotet/pz2_grpc_auth_task/services/auth/internal/grpc"
+	"github.com/gorilla/mux"
+	"github.com/ybotet/pz3_logr/services/auth/internal/auth"
+	grpcserver "github.com/ybotet/pz3_logr/services/auth/internal/grpc"
+	"github.com/ybotet/pz3_logr/shared/logger"
+	"github.com/ybotet/pz3_logr/shared/middleware"
 )
 
 func main() {
+
+    log := logger.New(logger.Config{
+        ServiceName: "auth",
+        Environment: "development",
+        LogLevel:    "debug",
+        JSONFormat:  true,
+    })
+    
+    // Router
+    r := mux.NewRouter()
+    
+    // Middlewares в ПРАВИЛЬНОМ порядке
+    r.Use(middleware.RequestID)
+    r.Use(middleware.Logging(log))
+
     port := os.Getenv("AUTH_GRPC_PORT")
     if port == "" {
         port = "50051"
-        log.Printf("AUTH_GRPC_PORT no configurado, usando puerto por defecto: %s", port)
+        log.Printf("AUTH_GRPC_PORT не настроен, используется порт по умолчанию: %s", port)
     }
 
     jwtSecret := os.Getenv("JWT_SECRET")
     if jwtSecret == "" {
         jwtSecret = "your-secret-key-change-in-production"
-        log.Printf("JWT_SECRET no configurado, usando clave por defecto (NO USAR EN PRODUCCIÓN)")
+        log.Printf("JWT_SECRET не настроен, используется ключ по умолчанию (НЕ ИСПОЛЬЗОВАТЬ В ПРОДАКШЕНЕ)")
     }
 
     lis, err := net.Listen("tcp", ":"+port)
     if err != nil {
-        log.Fatalf("Error al escuchar en puerto %s: %v", port, err)
+        log.Fatalf("Ошибка прослушивания порта %s: %v", port, err)
     }
 
     s := grpc.NewServer()
@@ -41,17 +58,17 @@ func main() {
         sigChan := make(chan os.Signal, 1)
         signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
         <-sigChan
-        log.Println("Apagando servidor gRPC...")
+        log.Println("Выключение gRPC сервера...")
         s.GracefulStop()
     }()
 
-    log.Printf("Servidor Auth gRPC escuchando en puerto %s", port)
+    log.Printf("gRPC сервер Auth слушает порт %s", port)
     
-    // Generar token de ejemplo para pruebas
-    testToken, _ := authService.GenerateToken("usuario_prueba", 24*time.Hour)
-    log.Printf("Token de prueba (válido 24h): %s", testToken)
+    // Генерация тестового токена
+    testToken, _ := authService.GenerateToken("тестовый_пользователь", 24*time.Hour)
+    log.Printf("Тестовый токен (действителен 24ч): %s", testToken)
     
     if err := s.Serve(lis); err != nil {
-        log.Fatalf("Error al servir: %v", err)
+        log.Fatalf("Ошибка при обслуживании: %v", err)
     }
 }

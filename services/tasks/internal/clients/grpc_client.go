@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	authpb "github.com/ybotet/pz2_grpc_auth_task/gen/proto/auth"
+	authpb "github.com/ybotet/pz3_logr/gen/proto/auth"
 )
 
 type AuthClient struct {

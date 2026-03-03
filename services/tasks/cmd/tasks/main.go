@@ -1,15 +1,19 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/ybotet/pz3_logr/services/tasks/internal/clients"
+	"github.com/ybotet/pz3_logr/services/tasks/internal/handlers"
 
-	"github.com/ybotet/pz2_grpc_auth_task/services/tasks/internal/clients"
-	"github.com/ybotet/pz2_grpc_auth_task/services/tasks/internal/handlers"
-	"github.com/ybotet/pz2_grpc_auth_task/services/tasks/internal/middleware"
+	// Алиас для внутреннего middleware (tasks)
+	internalMiddleware "github.com/ybotet/pz3_logr/services/tasks/internal/middleware"
+
+	// Общие пакеты
+	"github.com/ybotet/pz3_logr/shared/logger"
+	"github.com/ybotet/pz3_logr/shared/middleware" // общий middleware
 )
 
 func main() {
@@ -23,21 +27,35 @@ func main() {
         authAddr = "localhost:50051"
     }
 
-    // Conectar a Auth service
+    log := logger.New(logger.Config{
+        ServiceName: "tasks",
+        Environment: "development",
+        LogLevel:    "debug",
+        JSONFormat:  true,
+    })
+    
+    // Роутер
+    r := mux.NewRouter()
+    
+    // Middleware из SHARED (RequestID и Logging)
+    r.Use(middleware.RequestID)      // ✅ Из общего middleware
+    r.Use(middleware.Logging(log))   // ✅ Из общего middleware
+
+    // Подключение к Auth service
     authClient, err := clients.NewAuthClient(authAddr)
     if err != nil {
-        log.Fatalf("Error conectando a Auth service: %v", err)
+        log.Fatalf("Ошибка подключения к Auth service: %v", err)
     }
     defer authClient.Close()
 
-    // Crear middleware y handlers
-    authMiddleware := middleware.NewAuthMiddleware(authClient.GetClient())
+    // Создание middleware и обработчиков
+    // Используем internalMiddleware (с алиасом) для NewAuthMiddleware
+    authMiddleware := internalMiddleware.NewAuthMiddleware(authClient.GetClient())  // ✅ Изменено
     taskHandler := handlers.NewTaskHandler()
 
-    // Configurar rutas
-    r := mux.NewRouter()
+    // Настройка маршрутов
     r.HandleFunc("/tasks", authMiddleware.Authenticate(taskHandler.GetTasks)).Methods("GET")
 
-    log.Printf("Servidor Tasks escuchando en puerto %s", tasksPort)
+    log.Printf("Сервер Tasks слушает порт %s", tasksPort)
     log.Fatal(http.ListenAndServe(":"+tasksPort, r))
 }

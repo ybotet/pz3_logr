@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	authpb "github.com/ybotet/pz2_grpc_auth_task/gen/proto/auth"
+	authpb "github.com/ybotet/pz3_logr/gen/proto/auth"
 )
 
 type AuthMiddleware struct {
